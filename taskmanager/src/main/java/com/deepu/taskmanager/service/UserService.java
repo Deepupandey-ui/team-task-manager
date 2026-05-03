@@ -42,7 +42,12 @@ public class UserService {
             User updatedUser = existingUser.get();
             updatedUser.setName(user.getName());
             updatedUser.setEmail(user.getEmail());
-            updatedUser.setPassword(passwordEncoder.encode(user.getPassword()));
+            
+            // Only update password if a new one is provided
+            if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+                updatedUser.setPassword(passwordEncoder.encode(user.getPassword()));
+            }
+            
             updatedUser.setRole(user.getRole());
 
             return userRepository.save(updatedUser);

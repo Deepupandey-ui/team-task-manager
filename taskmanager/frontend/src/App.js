@@ -1,127 +1,346 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import UserList from "./components/UserList";
+import EditUserForm from "./components/EditUserForm";
+import TaskList from "./components/TaskList";
+import { login, getUsers, deleteUser, updateUser } from "./services/api";
 import "./App.css";
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Active Tab
+  const [activeTab, setActiveTab] = useState("tasks");
+
+  // Edit User States
+  const [editingUser, setEditingUser] = useState(null);
+  const [updateSuccess, setUpdateSuccess] = useState("");
+
+  // Login Form States
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [token, setToken] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [users, setUsers] = useState([]);
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
 
-  // 🔐 LOGIN
-  const handleLogin = async () => {
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadUsers();
+    }
+  }, [isLoggedIn]);
+
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (updateSuccess) {
+      const timer = setTimeout(() => setUpdateSuccess(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [updateSuccess]);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError("");
     try {
-      const res = await axios.post("http://localhost:8080/auth/login", {
-        email,
-        password,
-      });
-
-      setToken(res.data);
+      const res = await login({ email, password });
+      const receivedToken = res.data.token || res.data;
+      localStorage.setItem("token", receivedToken);
+      localStorage.setItem("email", email);
       setIsLoggedIn(true);
     } catch (err) {
-      alert("Login Failed ❌");
+      console.error(err);
+      setLoginError(err.response?.data?.error || "Invalid email or password. Please try again.");
+    } finally {
+      setLoginLoading(false);
     }
   };
 
-  // 🚪 LOGOUT
   const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
     setIsLoggedIn(false);
-    setToken("");
     setUsers([]);
   };
 
-  // 👥 FETCH USERS
-  const fetchUsers = async () => {
+  const loadUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:8080/users", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+      setLoading(true);
+      setError(null);
+      const res = await getUsers();
       setUsers(res.data);
     } catch (err) {
-      console.log(err);
-      alert("Error fetching users ❌");
+      console.error(err);
+      if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+        handleLogout();
+      } else {
+        setError("Failed to load users. Please ensure the server is running.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div>
-      {!isLoggedIn ? (
-        // 🔐 LOGIN PAGE
-        <div style={{ textAlign: "center", marginTop: "100px" }}>
-          <h1>Login</h1>
+  const handleEdit = (user) => {
+    setEditingUser(user);
+  };
 
-          <input
-            type="email"
-            placeholder="Enter Email"
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <br /><br />
+  const handleSaveUser = async (updatedUser) => {
+    try {
+      const res = await updateUser(updatedUser.id, updatedUser);
+      setUsers(users.map(u => (u.id === updatedUser.id ? res.data : u)));
+      setEditingUser(null);
+      setUpdateSuccess("User updated successfully!");
+    } catch (err) {
+      console.error("Error updating user:", err);
+      throw new Error("Failed to update user.");
+    }
+  };
 
-          <input
-            type="password"
-            placeholder="Enter Password"
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <br /><br />
+  // Determine current user's role safely
+  let currentUserRole = null;
+  const loggedInEmail = localStorage.getItem("email");
+  const currentUserObj = users.find(u => u.email === loggedInEmail);
+  
+  if (currentUserObj && currentUserObj.role) {
+    currentUserRole = currentUserObj.role.toUpperCase();
+  }
 
-          <button onClick={handleLogin}>Login</button>
+  const token = localStorage.getItem("token");
+  if (token) {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      const decoded = JSON.parse(jsonPayload);
+      if (decoded.role) {
+        currentUserRole = decoded.role.toUpperCase();
+      }
+    } catch (e) {
+      console.error("Failed to parse JWT", e);
+    }
+  }
+
+  // Forgot Password States
+  const [forgotPasswordStep, setForgotPasswordStep] = useState(0);
+  const [fpEmail, setFpEmail] = useState("");
+  const [fpOtp, setFpOtp] = useState("");
+  const [fpNewPassword, setFpNewPassword] = useState("");
+  const [fpLoading, setFpLoading] = useState(false);
+  const [fpError, setFpError] = useState("");
+  const [fpSuccess, setFpSuccess] = useState("");
+
+  const handleForgotPasswordRequest = async (e) => {
+    e.preventDefault();
+    setFpLoading(true);
+    setFpError("");
+    setFpSuccess("");
+    try {
+      const res = await import("./services/api").then(api => api.forgotPassword({ email: fpEmail }));
+      setFpSuccess(res.data.message || "OTP sent to your email!");
+      setForgotPasswordStep(2);
+    } catch (err) {
+      setFpError(err.response?.data?.error || "Failed to send OTP.");
+    } finally {
+      setFpLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setFpLoading(true);
+    setFpError("");
+    setFpSuccess("");
+    try {
+      const res = await import("./services/api").then(api => api.resetPassword({ email: fpEmail, otp: fpOtp, newPassword: fpNewPassword }));
+      setFpSuccess(res.data.message || "Password reset successfully!");
+      setTimeout(() => {
+        setForgotPasswordStep(0);
+        setFpSuccess("");
+      }, 2000);
+    } catch (err) {
+      setFpError(err.response?.data?.error || "Invalid OTP or failed to reset.");
+    } finally {
+      setFpLoading(false);
+    }
+  };
+
+  if (!isLoggedIn) {
+    if (forgotPasswordStep > 0) {
+      return (
+        <div className="login-container">
+          <div className="login-card">
+            <h2>Forgot Password</h2>
+            <p className="login-subtitle">
+              {forgotPasswordStep === 1 
+                ? "Enter your email to receive an OTP." 
+                : "Enter the OTP sent to your email and your new password."}
+            </p>
+            
+            {fpError && <div className="login-error">{fpError}</div>}
+            {fpSuccess && <div className="success-toast" style={{ position: 'relative', top: 0, marginBottom: '15px' }}>{fpSuccess}</div>}
+            
+            {forgotPasswordStep === 1 ? (
+              <form onSubmit={handleForgotPasswordRequest}>
+                <div className="form-group">
+                  <label>Email</label>
+                  <input 
+                    type="email" 
+                    value={fpEmail}
+                    onChange={(e) => setFpEmail(e.target.value)}
+                    placeholder="Enter your registered email"
+                    required 
+                  />
+                </div>
+                <button type="submit" className="btn-login" disabled={fpLoading}>
+                  {fpLoading ? "Sending OTP..." : "Send OTP"}
+                </button>
+                <div style={{ textAlign: "center", marginTop: "15px" }}>
+                  <span className="link-text" onClick={() => setForgotPasswordStep(0)}>Back to Login</span>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPassword}>
+                <div className="form-group">
+                  <label>OTP</label>
+                  <input 
+                    type="text" 
+                    value={fpOtp}
+                    onChange={(e) => setFpOtp(e.target.value)}
+                    placeholder="Enter 6-digit OTP"
+                    required 
+                  />
+                </div>
+                <div className="form-group">
+                  <label>New Password</label>
+                  <input 
+                    type="password" 
+                    value={fpNewPassword}
+                    onChange={(e) => setFpNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    required 
+                  />
+                </div>
+                <button type="submit" className="btn-login" disabled={fpLoading}>
+                  {fpLoading ? "Resetting..." : "Reset Password"}
+                </button>
+                <div style={{ textAlign: "center", marginTop: "15px" }}>
+                  <span className="link-text" onClick={() => setForgotPasswordStep(0)}>Back to Login</span>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
-      ) : (
-        // 🚀 DASHBOARD
-        <>
-          {/* HEADER */}
-          <div className="header">
-            <h2>Task Manager</h2>
-            <button onClick={handleLogout}>Logout</button>
-          </div>
+      );
+    }
 
-          {/* SIDEBAR */}
-          <div className="sidebar">
-            <h3>Menu</h3>
-            <ul>
-              <li>Dashboard</li>
-              <li onClick={fetchUsers}>Users</li>
-              <li>Settings</li>
-            </ul>
-          </div>
-
-          {/* MAIN CONTENT */}
-          <div className="main">
-            {/* WELCOME */}
-            <div className="card">
-              <h3>Welcome</h3>
-              <p>{email}</p>
+    return (
+      <div className="login-container">
+        <div className="login-card">
+          <h2>Task Manager Login</h2>
+          <p className="login-subtitle">Enter your credentials to access the dashboard</p>
+          
+          {loginError && <div className="login-error">{loginError}</div>}
+          
+          <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label>Email</label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
+                required 
+              />
             </div>
-
-            {/* TOKEN */}
-            <div className="card">
-              <h3>JWT Token</h3>
-              <p style={{ wordBreak: "break-all" }}>{token}</p>
+            <div className="form-group">
+              <label>Password</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required 
+              />
             </div>
-
-            {/* USERS */}
-            <div className="card">
-              <h3>Users List</h3>
-
-              {users.length === 0 ? (
-                <p>Click "Users" in sidebar to load data</p>
-              ) : (
-                <ul>
-                  {users.map((u) => (
-                    <li key={u.id}>
-                      {u.name} - {u.role}
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <button type="submit" className="btn-login" disabled={loginLoading}>
+              {loginLoading ? "Authenticating..." : "Sign In"}
+            </button>
+            <div style={{ textAlign: "center", marginTop: "15px" }}>
+              <span className="link-text" onClick={() => { setForgotPasswordStep(1); setFpError(""); setFpSuccess(""); setFpEmail(""); }}>Forgot Password?</span>
             </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dashboard-layout">
+      <header className="dashboard-header">
+        <h1>Task Manager Dashboard</h1>
+        <div className="header-right">
+          <span className="logged-in-user">👤 {loggedInEmail}</span>
+          {currentUserRole && <span className="header-role-badge">{currentUserRole}</span>}
+          <button onClick={handleLogout} className="btn-logout">Logout</button>
+        </div>
+      </header>
+
+      {/* Tab Navigation */}
+      <div className="tab-navigation">
+        <button 
+          className={`tab-btn ${activeTab === 'tasks' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('tasks')}
+        >
+          📋 Tasks
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'users' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          👥 Users
+        </button>
+      </div>
+
+      <main className="dashboard-content">
+        {updateSuccess && (
+          <div className="success-toast">
+            ✓ {updateSuccess}
           </div>
-        </>
-      )}
+        )}
+
+        {/* Tasks Tab */}
+        {activeTab === 'tasks' && (
+          <TaskList currentUserRole={currentUserRole} />
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <>
+            <UserList 
+              users={users} 
+              loading={loading} 
+              error={error} 
+              currentUserRole={currentUserRole}
+              onDeleteSuccess={(deletedId) => {
+                setUsers(users.filter(user => user.id !== deletedId));
+                setUpdateSuccess("User deleted successfully!");
+              }}
+              onEdit={handleEdit}
+            />
+
+            {editingUser && (
+              <EditUserForm
+                user={editingUser}
+                onSave={handleSaveUser}
+                onClose={() => setEditingUser(null)}
+              />
+            )}
+          </>
+        )}
+      </main>
     </div>
   );
 }

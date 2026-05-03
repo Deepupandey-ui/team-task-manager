@@ -19,6 +19,10 @@ public class User {
 
     private String role;
 
+    private String resetOtp;
+
+    private java.time.LocalDateTime otpExpiry;
+
     // GETTERS & SETTERS
 
     public Long getId() { return id; }
@@ -35,4 +39,10 @@ public class User {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public String getResetOtp() { return resetOtp; }
+    public void setResetOtp(String resetOtp) { this.resetOtp = resetOtp; }
+
+    public java.time.LocalDateTime getOtpExpiry() { return otpExpiry; }
+    public void setOtpExpiry(java.time.LocalDateTime otpExpiry) { this.otpExpiry = otpExpiry; }
 }
