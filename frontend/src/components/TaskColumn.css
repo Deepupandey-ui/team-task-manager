@@ -1,0 +1,148 @@
+/* ==============================
+   KANBAN COLUMN — Drop Zone
+   ============================== */
+
+.kanban-column {
+  background: #ffffff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+/* Column Header */
+/* Column Header - Black Mode */
+.col-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1a1b1e;
+  color: white;
+}
+
+.col-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.col-icon {
+  font-size: 20px;
+}
+
+.col-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.col-count {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  min-width: 26px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Column Color Variants */
+/* Remove gradient variants to keep it white/black */
+.col-todo, .col-progress, .col-done {
+  background: #ffffff;
+}
+
+.col-header {
+  border-bottom: 3px solid transparent;
+}
+
+.col-todo .col-header { border-bottom-color: #adb5bd; }
+.col-progress .col-header { border-bottom-color: #ffd43b; }
+.col-done .col-header { border-bottom-color: #40c057; }
+
+/* Drop Zone */
+.col-drop-zone {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 120px;
+  transition: all 0.3s ease;
+  border-radius: 0 0 14px 14px;
+}
+
+/* Drop Zone Active (card hovering over) */
+.col-drop-active {
+  border-color: #3b5bdb;
+  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.15), 0 8px 32px rgba(59, 91, 219, 0.1);
+  transform: scale(1.01);
+}
+
+.col-zone-active {
+  background: rgba(59, 91, 219, 0.04);
+}
+
+.col-todo.col-drop-active {
+  border-color: #868e96;
+  box-shadow: 0 0 0 3px rgba(134, 142, 150, 0.15), 0 8px 32px rgba(134, 142, 150, 0.1);
+}
+
+.col-progress.col-drop-active {
+  border-color: #e67700;
+  box-shadow: 0 0 0 3px rgba(230, 119, 0, 0.15), 0 8px 32px rgba(230, 119, 0, 0.1);
+}
+
+.col-done.col-drop-active {
+  border-color: #2b8a3e;
+  box-shadow: 0 0 0 3px rgba(43, 138, 62, 0.15), 0 8px 32px rgba(43, 138, 62, 0.1);
+}
+
+/* Empty Column Placeholder */
+.col-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #dee2e6;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  color: #adb5bd;
+  transition: all 0.3s ease;
+  min-height: 120px;
+}
+
+.col-zone-active .col-empty {
+  border-color: #3b5bdb;
+  background: rgba(59, 91, 219, 0.05);
+  color: #3b5bdb;
+  animation: col-pulse 1.5s ease-in-out infinite;
+}
+
+.col-empty-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+.col-empty p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@keyframes col-pulse {
+  0%, 100% { border-color: rgba(59, 91, 219, 0.3); }
+  50% { border-color: rgba(59, 91, 219, 0.7); }
+}

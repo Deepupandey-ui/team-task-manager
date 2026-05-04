@@ -1,0 +1,332 @@
+/* ================================
+   TASK LIST — Kanban Board Layout
+   ================================ */
+
+.task-list-card {
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.06);
+  padding: 32px;
+}
+
+.kanban-wrapper {
+  background: #fdfdfd;
+  padding: 30px;
+  border-radius: 24px;
+}
+
+.dashboard-top-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-top-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.task-list-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #f1f3f5;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.task-list-header-row > div {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.task-list-header {
+  color: #1a1b1e;
+  font-size: 24px;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.task-count {
+  background-color: #f1f3f5;
+  color: #495057;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ─── Stats Cards ─────────────────── */
+
+.task-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-todo {
+  background: linear-gradient(135deg, #f1f3f5, #e9ecef);
+  color: #868e96;
+}
+
+.stat-progress {
+  background: linear-gradient(135deg, #fff9db, #fff3bf);
+  color: #e67700;
+}
+
+.stat-done {
+  background: linear-gradient(135deg, #ebfbee, #d3f9d8);
+  color: #2b8a3e;
+}
+
+/* ─── Filters & Search ────────────── */
+
+.filter-search-container {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.search-box {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 16px;
+  z-index: 1;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 11px 16px 11px 42px;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: #f8f9fa;
+  box-sizing: border-box;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #3b5bdb;
+  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.1);
+  background: #fff;
+}
+
+.filter-box select {
+  padding: 11px 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #f8f9fa;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.filter-box select:focus {
+  outline: none;
+  border-color: #3b5bdb;
+  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.1);
+}
+
+/* ─── Kanban Board ────────────────── */
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  min-height: 500px;
+}
+
+/* When only 1 column visible (status filter) */
+.kanban-board:has(> :only-child) {
+  grid-template-columns: 1fr;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* ─── Messages ────────────────────── */
+
+.inline-success-message {
+  background: linear-gradient(135deg, #ebfbee, #d3f9d8);
+  color: #2b8a3e;
+  border: 1px solid #b2f2bb;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 16px;
+  animation: msgSlideIn 0.3s ease;
+}
+
+.state-message {
+  text-align: center;
+  padding: 40px;
+  color: #868e96;
+  font-size: 15px;
+}
+
+.state-message.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.state-message.error {
+  background-color: #fff5f5;
+  color: #e03131;
+  border: 1px solid #ffc9c9;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+/* ─── Spinner ─────────────────────── */
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #e9ecef;
+  border-top-color: #3b5bdb;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Buttons ─────────────────────── */
+
+.btn-add-task {
+  background: linear-gradient(135deg, #3b5bdb, #364fc7);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 91, 219, 0.25);
+}
+
+.btn-add-task:hover {
+  background: linear-gradient(135deg, #364fc7, #2f44b0);
+  box-shadow: 0 4px 16px rgba(59, 91, 219, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-action {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-edit {
+  background-color: #e7f5ff;
+  color: #1971c2;
+}
+
+.btn-edit:hover {
+  background-color: #d0ebff;
+}
+
+.btn-delete {
+  background-color: #fff5f5;
+  color: #e03131;
+}
+
+.btn-delete:hover {
+  background-color: #ffe3e3;
+}
+
+@keyframes msgSlideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Responsive ──────────────────── */
+
+@media (max-width: 1024px) {
+  .kanban-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .task-list-card {
+    padding: 20px;
+    border-radius: 12px;
+  }
+
+  .kanban-board {
+    grid-template-columns: 1fr;
+  }
+
+  .task-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .task-list-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .filter-search-container {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .task-stats {
+    grid-template-columns: 1fr;
+  }
+}
