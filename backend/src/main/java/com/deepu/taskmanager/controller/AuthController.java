@@ -33,29 +33,20 @@ public class AuthController {
     // Register endpoint - allows creating users without authentication
     // Useful for creating the first admin user when no admin exists
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
+    public ResponseEntity<?> register(@RequestBody com.deepu.taskmanager.dto.RegisterRequest request) {
         try {
-            // Check if email already exists
-            if (authService.emailExists(user.getEmail())) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Email already registered: " + user.getEmail()));
-            }
-
-            // If no role specified, default to USER
-            if (user.getRole() == null || user.getRole().isEmpty()) {
-                user.setRole("USER");
-            }
-
-            User createdUser = userService.createUser(user);
+            String token = authService.register(request);
             return ResponseEntity.ok(Map.of(
-                    "message", "User registered successfully",
-                    "id", createdUser.getId(),
-                    "email", createdUser.getEmail(),
-                    "role", createdUser.getRole()
+                    "message", "Registration successful!",
+                    "token", token
             ));
         } catch (Exception e) {
+            e.printStackTrace(); // Log the error in terminal
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+
 
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {

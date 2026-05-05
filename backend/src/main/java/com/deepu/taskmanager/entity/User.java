@@ -23,12 +23,17 @@ public class User {
 
     private java.time.LocalDateTime otpExpiry;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "company_id")
+    private Company company;
+
     @Column(name = "performance_score")
+
     private Integer performanceScore = 0;
 
-    private Integer currentStreak = 0;
+    private Integer streak = 0;
     private Integer longestStreak = 0;
-    private java.time.LocalDateTime lastTaskDate;
+    private java.time.LocalDateTime lastActiveDate;
 
     // GETTERS & SETTERS
 
@@ -58,12 +63,16 @@ public class User {
     }
     public void setPerformanceScore(Integer performanceScore) { this.performanceScore = performanceScore; }
 
-    public Integer getCurrentStreak() { return currentStreak == null ? 0 : currentStreak; }
-    public void setCurrentStreak(Integer currentStreak) { this.currentStreak = currentStreak; }
+    public Integer getStreak() { return streak == null ? 0 : streak; }
+    public void setStreak(Integer streak) { this.streak = streak; }
 
     public Integer getLongestStreak() { return longestStreak == null ? 0 : longestStreak; }
     public void setLongestStreak(Integer longestStreak) { this.longestStreak = longestStreak; }
 
-    public java.time.LocalDateTime getLastTaskDate() { return lastTaskDate; }
-    public void setLastTaskDate(java.time.LocalDateTime lastTaskDate) { this.lastTaskDate = lastTaskDate; }
+    public java.time.LocalDateTime getLastActiveDate() { return lastActiveDate; }
+    public void setLastActiveDate(java.time.LocalDateTime lastActiveDate) { this.lastActiveDate = lastActiveDate; }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
 }
+

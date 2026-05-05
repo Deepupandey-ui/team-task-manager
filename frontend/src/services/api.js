@@ -15,7 +15,9 @@ API.interceptors.request.use((req) => {
 
 // Auth APIs
 export const login = (data) => API.post("/auth/login", data);
+export const register = (data) => API.post("/auth/register", data);
 export const forgotPassword = (data) => API.post("/auth/forgot-password", data);
+
 export const resetPassword = (data) => API.post("/auth/reset-password", data);
 
 // User APIs
@@ -45,5 +47,12 @@ export const deleteTask = (id) => API.delete(`/tasks/${id}`);
 
 // Activity APIs
 export const getActivities = () => API.get("/activities");
+
+// Admin APIs
+export const getAdminStats = () => API.get("/admin/stats");
+
+// Notification APIs
+export const getNotifications = () => API.get("/notifications");
+export const markNotificationRead = (id) => API.put(`/notifications/${id}/read`);
 
 export default API;

@@ -3,7 +3,9 @@ import UserList from "./components/UserList";
 import EditUserForm from "./components/EditUserForm";
 import TaskList from "./components/TaskList";
 import Leaderboard from "./components/Leaderboard";
+import AdminPanel from "./components/AdminPanel";
 import { login, getUsers, deleteUser, updateUser, getMyPerformance } from "./services/api";
+
 import "./App.css";
 
 function App() {
@@ -12,9 +14,11 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [myPerformance, setMyPerformance] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState("tasks");
+
 
   // Edit User States
   const [editingUser, setEditingUser] = useState(null);
@@ -30,10 +34,21 @@ function App() {
     if (isLoggedIn) {
       loadUsers();
       loadMyPerformance();
+      loadNotifications();
     }
   }, [isLoggedIn]);
 
+  const loadNotifications = async () => {
+    try {
+      const res = await import("./services/api").then(api => api.getNotifications());
+      setNotifications(res.data);
+    } catch (err) {
+      console.error("Failed to load notifications:", err);
+    }
+  };
+
   const loadMyPerformance = async () => {
+
     try {
       const res = await getMyPerformance();
       setMyPerformance(res.data);
@@ -136,6 +151,7 @@ function App() {
   }
 
   // Forgot Password States
+  // Forgot Password States
   const [forgotPasswordStep, setForgotPasswordStep] = useState(0);
   const [fpEmail, setFpEmail] = useState("");
   const [fpOtp, setFpOtp] = useState("");
@@ -143,6 +159,14 @@ function App() {
   const [fpLoading, setFpLoading] = useState(false);
   const [fpError, setFpError] = useState("");
   const [fpSuccess, setFpSuccess] = useState("");
+
+  // Auth Mode: login / register
+  const [authMode, setAuthMode] = useState("login");
+  const [regData, setRegData] = useState({ name: "", email: "", password: "", companyName: "" });
+  const [regLoading, setRegLoading] = useState(false);
+  const [regError, setRegError] = useState("");
+
+
 
   const handleForgotPasswordRequest = async (e) => {
     e.preventDefault();
@@ -176,6 +200,25 @@ function App() {
       setFpError(err.response?.data?.error || "Invalid OTP or failed to reset.");
     } finally {
       setFpLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setRegLoading(true);
+    setRegError("");
+    try {
+      const res = await import("./services/api").then(api => api.register(regData));
+      const { token } = res.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("email", regData.email);
+      setIsLoggedIn(true);
+      setLoggedInEmail(regData.email);
+      setAuthMode("login");
+    } catch (err) {
+      setRegError(err.response?.data?.error || "Registration failed.");
+    } finally {
+      setRegLoading(false);
     }
   };
 
@@ -248,6 +291,68 @@ function App() {
       );
     }
 
+    if (authMode === "register") {
+      return (
+        <div className="login-container">
+          <div className="login-card anim-slide-up">
+            <h2>Create Your Workspace</h2>
+            <p className="login-subtitle">Start managing your team with a professional SaaS environment</p>
+            
+            {regError && <div className="login-error">{regError}</div>}
+            
+            <form onSubmit={handleRegister}>
+              <div className="form-group">
+                <label>Full Name</label>
+                <input 
+                  type="text" 
+                  value={regData.name}
+                  onChange={(e) => setRegData({...regData, name: e.target.value})}
+                  placeholder="e.g. John Doe"
+                  required 
+                />
+              </div>
+              <div className="form-group">
+                <label>Organization Name</label>
+                <input 
+                  type="text" 
+                  value={regData.companyName}
+                  onChange={(e) => setRegData({...regData, companyName: e.target.value})}
+                  placeholder="e.g. Acme Corp"
+                  required 
+                />
+              </div>
+              <div className="form-group">
+                <label>Email Address</label>
+                <input 
+                  type="email" 
+                  value={regData.email}
+                  onChange={(e) => setRegData({...regData, email: e.target.value})}
+                  placeholder="name@company.com"
+                  required 
+                />
+              </div>
+              <div className="form-group">
+                <label>Password</label>
+                <input 
+                  type="password" 
+                  value={regData.password}
+                  onChange={(e) => setRegData({...regData, password: e.target.value})}
+                  placeholder="Minimum 8 characters"
+                  required 
+                />
+              </div>
+              <button type="submit" className="btn-login" disabled={regLoading}>
+                {regLoading ? "Building Workspace..." : "Create Workspace"}
+              </button>
+              <div className="auth-footer">
+                Already have a workspace? <span className="link-text" onClick={() => setAuthMode("login")}>Sign In</span>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="login-container">
         <div className="login-card">
@@ -280,8 +385,11 @@ function App() {
             <button type="submit" className="btn-login" disabled={loginLoading}>
               {loginLoading ? "Authenticating..." : "Sign In"}
             </button>
-            <div style={{ textAlign: "center", marginTop: "15px" }}>
-              <span className="link-text" onClick={() => { setForgotPasswordStep(1); setFpError(""); setFpSuccess(""); setFpEmail(""); }}>Forgot Password?</span>
+            <div className="auth-footer">
+               <span className="link-text" onClick={() => setForgotPasswordStep(1)}>Forgot Password?</span>
+               <div style={{ marginTop: "12px" }}>
+                 New here? <span className="link-text" onClick={() => setAuthMode("register")}>Create a Workspace</span>
+               </div>
             </div>
           </form>
         </div>
@@ -297,13 +405,22 @@ function App() {
           {myPerformance && (
             <div className="header-performance">
               <span className="hp-score" title="Total Performance Points">🏆 {myPerformance.score}</span>
-              <span className="hp-streak" title={`Current Streak: ${myPerformance.currentStreak} days`}>🔥 {myPerformance.currentStreak}</span>
+              <span className="hp-streak" title={`Current Streak: ${myPerformance.streak} days`}>🔥 {myPerformance.streak}</span>
               <span className="hp-badge">{myPerformance.badge}</span>
             </div>
+
           )}
           <span className="logged-in-user">👤 {loggedInEmail}</span>
+          {myPerformance?.companyName && (
+            <span className="company-badge">🏢 {myPerformance.companyName}</span>
+          )}
           {currentUserRole && <span className="header-role-badge">{currentUserRole}</span>}
+
+          <div className="notification-bell" onClick={() => setActiveTab('notifications')}>
+             🔔 {notifications.filter(n => !n.read).length > 0 && <span className="notif-count">{notifications.filter(n => !n.read).length}</span>}
+          </div>
           <button onClick={handleLogout} className="btn-logout">Logout</button>
+
         </div>
       </header>
 
@@ -327,7 +444,16 @@ function App() {
         >
           🏆 Leaderboard
         </button>
+        {currentUserRole === 'ADMIN' && (
+          <button 
+            className={`tab-btn ${activeTab === 'admin' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('admin')}
+          >
+            📊 Admin Panel
+          </button>
+        )}
       </div>
+
 
       <main className="dashboard-content">
         {updateSuccess && (
@@ -373,7 +499,41 @@ function App() {
         {activeTab === 'leaderboard' && (
           <Leaderboard />
         )}
+
+        {/* Admin Tab */}
+        {activeTab === 'admin' && currentUserRole === 'ADMIN' && (
+          <AdminPanel />
+        )}
+
+        {/* Notifications Tab */}
+        {activeTab === 'notifications' && (
+          <div className="notifications-tab">
+            <h2>Notifications</h2>
+            {notifications.length === 0 ? (
+              <p>No notifications yet.</p>
+            ) : (
+              <div className="notif-list">
+                {notifications.map(n => (
+                  <div key={n.id} className={`notif-item ${n.read ? 'read' : 'unread'}`} onClick={() => {
+                    import("./services/api").then(api => api.markNotificationRead(n.id));
+                    setNotifications(notifications.map(notif => notif.id === n.id ? {...notif, read: true} : notif));
+                  }}>
+                    <div className="notif-content">
+                      <span className="notif-type">[{n.type}]</span>
+                      <p>{n.message}</p>
+                      <small>{new Date(n.createdAt).toLocaleString()}</small>
+                    </div>
+                    {!n.read && <span className="unread-dot"></span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </main>
+
+
+
     </div>
   );
 }

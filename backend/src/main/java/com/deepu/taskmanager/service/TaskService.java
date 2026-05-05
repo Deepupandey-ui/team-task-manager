@@ -6,7 +6,9 @@ import com.deepu.taskmanager.dto.TaskStatsResponse;
 import com.deepu.taskmanager.entity.Task;
 import com.deepu.taskmanager.entity.TaskStatus;
 import com.deepu.taskmanager.entity.User;
+import com.deepu.taskmanager.entity.Company;
 import com.deepu.taskmanager.repository.TaskRepository;
+
 import com.deepu.taskmanager.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -23,13 +25,16 @@ public class TaskService {
     private final UserRepository userRepository;
     private final ActivityService activityService;
     private final PerformanceService performanceService;
+    private final NotificationService notificationService;
 
-    public TaskService(TaskRepository taskRepository, UserRepository userRepository, ActivityService activityService, PerformanceService performanceService) {
+    public TaskService(TaskRepository taskRepository, UserRepository userRepository, ActivityService activityService, PerformanceService performanceService, NotificationService notificationService) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.activityService = activityService;
         this.performanceService = performanceService;
+        this.notificationService = notificationService;
     }
+
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -62,6 +67,7 @@ public class TaskService {
         task.setStatus(request.getStatus());
         task.setUser(currentUser);
         task.setDifficulty(request.getDifficulty() != null ? request.getDifficulty() : "MEDIUM");
+        task.setCompany(currentUser.getCompany()); // Set company
 
         User assignedUser = resolveAssignedUser(request.getAssignedToId(), currentUser);
         task.setAssignedTo(assignedUser);
@@ -77,7 +83,7 @@ public class TaskService {
         Task saved = taskRepository.save(task);
         
         // Log Activity
-        activityService.logActivity("CREATE", currentUser.getName(), saved.getTitle());
+        activityService.logActivity("CREATE", currentUser.getName(), saved.getTitle(), saved.getCompany());
         
         return TaskResponse.fromEntity(saved);
     }
@@ -86,10 +92,13 @@ public class TaskService {
     public List<TaskResponse> getTasks() {
         User currentUser = getCurrentUser();
         String role = getCurrentRole();
+        Company company = currentUser.getCompany();
+
+        if (company == null) return List.of();
 
         List<Task> tasks;
         if ("ADMIN".equalsIgnoreCase(role)) {
-            tasks = taskRepository.findAllByOrderByCreatedAtDesc();
+            tasks = taskRepository.findByCompanyOrderByCreatedAtDesc(company);
         } else {
             tasks = taskRepository.findByAssignedToOrderByCreatedAtDesc(currentUser);
         }
@@ -103,12 +112,15 @@ public class TaskService {
     public TaskStatsResponse getStats() {
         User currentUser = getCurrentUser();
         String role = getCurrentRole();
+        Company company = currentUser.getCompany();
+
+        if (company == null) return new TaskStatsResponse(0, 0, 0, 0);
 
         if ("ADMIN".equalsIgnoreCase(role)) {
-            long total = taskRepository.count();
-            long todo = taskRepository.countByStatus(TaskStatus.TODO);
-            long inProgress = taskRepository.countByStatus(TaskStatus.IN_PROGRESS);
-            long done = taskRepository.countByStatus(TaskStatus.DONE);
+            long total = taskRepository.countByCompany(company);
+            long todo = taskRepository.countByCompanyAndStatus(company, TaskStatus.TODO);
+            long inProgress = taskRepository.countByCompanyAndStatus(company, TaskStatus.IN_PROGRESS);
+            long done = taskRepository.countByCompanyAndStatus(company, TaskStatus.DONE);
             return new TaskStatsResponse(total, todo, inProgress, done);
         } else {
             long total = taskRepository.countByAssignedTo(currentUser);
@@ -118,6 +130,7 @@ public class TaskService {
             return new TaskStatsResponse(total, todo, inProgress, done);
         }
     }
+
 
     @Transactional(readOnly = true)
     public TaskResponse getTaskById(Long id) {
@@ -154,14 +167,24 @@ public class TaskService {
         if (request.getStatus() == TaskStatus.DONE && !oldStatus.equals("DONE")) {
             task.setCompletedAt(java.time.LocalDateTime.now());
             
-            // Update User Score & Streaks
+            // Update User Streaks & Score
             User assignee = task.getAssignedTo() != null ? task.getAssignedTo() : task.getUser();
-            int scoreChange = performanceService.calculateScoreChange(task);
-            int streakBonus = performanceService.updateStreakAndGetBonus(assignee);
+            performanceService.updateStreakOnTaskCompletion(assignee);
             
-            assignee.setPerformanceScore(assignee.getPerformanceScore() + scoreChange + streakBonus);
+            // Recalculate total score based on the new SMART formula
+            List<Task> userTasks = taskRepository.findByAssignedToOrderByCreatedAtDesc(assignee);
+            int newScore = performanceService.calculateTotalScore(assignee, userTasks);
+            
+            int diff = newScore - (assignee.getPerformanceScore() != null ? assignee.getPerformanceScore() : 0);
+            assignee.setPerformanceScore(newScore);
             userRepository.save(assignee);
+
+            // Notify user
+            String scoreMsg = (diff >= 0 ? "+" : "") + diff + " points! New score: " + newScore;
+            notificationService.createNotification(assignee, "Score Updated: " + scoreMsg, "SCORE_CHANGE");
         }
+
+
 
         if (request.getAssignedToId() != null) {
             if (!"ADMIN".equalsIgnoreCase(role)) {
@@ -184,7 +207,7 @@ public class TaskService {
 
         // Log Activity: Check if it was a status move or general update
         String action = oldStatus.equals(updated.getStatus().toString()) ? "UPDATE" : "MOVE";
-        activityService.logActivity(action, currentUser.getName(), updated.getTitle());
+        activityService.logActivity(action, currentUser.getName(), updated.getTitle(), updated.getCompany());
 
         return TaskResponse.fromEntity(updated);
     }
@@ -204,7 +227,7 @@ public class TaskService {
         taskRepository.delete(task);
         
         // Log Activity
-        activityService.logActivity("DELETE", currentUser.getName(), title);
+        activityService.logActivity("DELETE", currentUser.getName(), title, task.getCompany());
     }
 
     /**

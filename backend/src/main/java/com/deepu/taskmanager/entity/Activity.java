@@ -15,14 +15,21 @@ public class Activity {
     private String taskTitle;
     private LocalDateTime timestamp;
 
+
+    @ManyToOne
+    @JoinColumn(name = "company_id")
+    private Company company;
+
     public Activity() {}
 
-    public Activity(String action, String userName, String taskTitle) {
+    public Activity(String action, String userName, String taskTitle, Company company) {
         this.action = action;
         this.userName = userName;
         this.taskTitle = taskTitle;
+        this.company = company;
         this.timestamp = LocalDateTime.now();
     }
+
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -35,4 +42,8 @@ public class Activity {
     public void setTaskTitle(String taskTitle) { this.taskTitle = taskTitle; }
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
 }
+

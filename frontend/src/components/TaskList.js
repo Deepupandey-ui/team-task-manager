@@ -241,11 +241,15 @@ function TaskList({ currentUserRole, loadMyPerformance }) {
     try {
       await updateTaskStatus(draggedTask.id, newStatus, draggedTask);
       
-      if (newStatus === "DONE") {
-        setSuccessMsg("🔥 Points Earned! Keep it up.");
-      } else {
-        setSuccessMsg(`Moved to ${statusLabels[newStatus]}`);
-      }
+    if (newStatus === "DONE") {
+      const isEarly = draggedTask.dueDate && new Date(draggedTask.completedAt || new Date()) < new Date(draggedTask.dueDate);
+      let msg = "🔥 +10 points earned";
+      if (isEarly) msg += " | +5 bonus (early completion)";
+      setSuccessMsg(msg);
+    } else {
+      setSuccessMsg(`Moved to ${statusLabels[newStatus]}`);
+    }
+
       
       loadStats();
       loadActivities();

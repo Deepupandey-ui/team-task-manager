@@ -6,98 +6,92 @@ import com.deepu.taskmanager.entity.User;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 public class PerformanceService {
 
-    public int calculateScoreChange(Task task) {
-        int baseScore = 10;
-        int bonus = 0;
-        int penalty = 0;
+    /**
+     * Step 2: Calculate Score based on formula:
+     * score = (completedTasks * 10) + (earlyCompletedTasks * 5) - (overdueTasks * 7) + (streak * 3)
+     */
+    public int calculateTotalScore(User user, List<Task> tasks) {
+        long completedBeforeDeadline = tasks.stream()
+                .filter(t -> t.getStatus() == TaskStatus.DONE && t.getCompletedAt() != null && t.getDueDate() != null && t.getCompletedAt().isBefore(t.getDueDate()))
+                .count();
+        long completedAfterDeadline = tasks.stream()
+                .filter(t -> t.getStatus() == TaskStatus.DONE && (t.getCompletedAt() == null || t.getDueDate() == null || t.getCompletedAt().isAfter(t.getDueDate())))
+                .count();
+        long overdueTasks = tasks.stream()
+                .filter(t -> t.getStatus() != TaskStatus.DONE && t.getDueDate() != null && t.getDueDate().isBefore(LocalDateTime.now()))
+                .count();
+        int streak = user.getStreak() != null ? user.getStreak() : 0;
 
-        // Difficulty Multiplier
-        int multiplier = 1;
-        String difficulty = task.getDifficulty() != null ? task.getDifficulty() : "MEDIUM";
-        if (difficulty.equalsIgnoreCase("HARD")) multiplier = 3;
-        else if (difficulty.equalsIgnoreCase("MEDIUM")) multiplier = 2;
-
-        if (task.getStatus() != TaskStatus.DONE) {
-            // Check if currently overdue
-            if (task.getDueDate() != null && task.getDueDate().isBefore(LocalDateTime.now())) {
-                return -7; // Overdue penalty
-            }
-            return 0;
-        }
-
-        // Task is DONE
-        LocalDateTime completed = task.getCompletedAt();
-        LocalDateTime due = task.getDueDate();
-
-        if (completed == null || due == null) {
-            return baseScore * multiplier;
-        }
-
-        if (completed.isBefore(due)) {
-            bonus = 5; // Early completion bonus
-        } else if (completed.isAfter(due)) {
-            penalty = 7; // Late completion penalty
-            return -penalty; // Overdue task gets negative points
-        }
-
-        return (baseScore + bonus) * multiplier;
+        return (int) ((completedBeforeDeadline * 10) + (completedAfterDeadline * 5) - (overdueTasks * 5) + (streak * 2));
     }
 
-    public int updateStreakAndGetBonus(User user) {
+
+    /**
+     * Step 3: Badge System
+     */
+    public String getBadge(int score, int rank) {
+        // Important: Top 3 rank override
+        if (rank > 0 && rank <= 3) {
+            return "Top Performer";
+        }
+
+        if (score < 10) return "Needs Improvement";
+        if (score < 30) return "Consistent";
+        if (score < 60) return "Performer";
+        return "Top Performer";
+    }
+
+    /**
+     * Step 4: Streak System
+     * Logic: if user completes task today, check if last active was yesterday.
+     */
+    public void updateStreakOnTaskCompletion(User user) {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime last = user.getLastTaskDate();
-        
-        if (last == null) {
-            user.setCurrentStreak(1);
-            user.setLastTaskDate(now);
-            return 0;
-        }
+        LocalDateTime lastActive = user.getLastActiveDate();
 
-        long daysBetween = ChronoUnit.DAYS.between(last.toLocalDate(), now.toLocalDate());
-
-        if (daysBetween == 0) {
-            // Already completed a task today, streak continues but no increment needed for today
-            return 0;
-        } else if (daysBetween == 1) {
-            // Consecutive day
-            user.setCurrentStreak(user.getCurrentStreak() + 1);
-            if (user.getCurrentStreak() > user.getLongestStreak()) {
-                user.setLongestStreak(user.getCurrentStreak());
-            }
-            user.setLastTaskDate(now);
-
-            // Bonus logic
-            if (user.getCurrentStreak() == 3) return 10;
-            if (user.getCurrentStreak() == 7) return 25;
-            if (user.getCurrentStreak() == 15) return 50;
-            return 0;
+        if (lastActive == null) {
+            user.setStreak(1);
         } else {
-            // Streak broken
-            user.setCurrentStreak(1);
-            user.setLastTaskDate(now);
-            return 0;
+            long daysSinceLastActive = ChronoUnit.DAYS.between(lastActive.toLocalDate(), now.toLocalDate());
+            
+            if (daysSinceLastActive == 1) {
+                user.setStreak(user.getStreak() + 1);
+            } else if (daysSinceLastActive > 1) {
+                user.setStreak(1);
+            }
+            // If daysSinceLastActive == 0, streak stays same (already active today)
         }
+        user.setLastActiveDate(now);
     }
 
-    public String getBadge(int score) {
-        if (score >= 80) return "💎 Elite Performer";
-        if (score >= 40) return "🌟 Rising Star";
-        if (score >= 10) return "🛡️ Active Contributor";
-        return "⚠️ Needs Improvement";
+    /**
+     * Step 5: Goal Engine
+     */
+    public String getGoalMessage(int score, int rank, int nextRankScore) {
+        if (rank > 1 && nextRankScore > score) {
+            return "You need +" + (nextRankScore - score) + " points to reach Rank #" + (rank - 1);
+        }
+        
+        // Badge goals
+        if (score < 10) return "You need +" + (10 - score) + " points to reach Consistent badge";
+        if (score < 30) return "You need +" + (30 - score) + " points to reach Performer badge";
+        if (score < 60) return "You need +" + (60 - score) + " points to reach Top Performer badge";
+        
+        return "You are at the top of your game!";
     }
 
-    public String getFeedback(long overdueCount, long completedCount, boolean hasEarlyCompletions) {
-        if (overdueCount > 2) return "⚠️ You have overdue tasks. Improve time management.";
-        if (hasEarlyCompletions && completedCount > 3) return "🚀 Excellent speed! You're ahead of deadlines.";
-        if (completedCount > 5) return "🔥 Great work! Keep the momentum.";
-        return "💡 Consistency is key. Focus on daily task completion.";
-    }
-
-    public boolean isPromotionReady(int score) {
-        return score >= 100;
+    /**
+     * Step 6: Progress Bar (Completion Rate)
+     */
+    public double calculateCompletionRate(List<Task> tasks) {
+        if (tasks.isEmpty()) return 0.0;
+        long completed = tasks.stream().filter(t -> t.getStatus() == TaskStatus.DONE).count();
+        return (double) completed / tasks.size() * 100;
     }
 }
+

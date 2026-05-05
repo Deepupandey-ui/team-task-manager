@@ -64,11 +64,12 @@ function AnalyticsDashboard({ stats }) {
           <div className="mini-stat-card">
             <div className="mini-stat-icon done-icon">✅</div>
             <div className="mini-stat-info">
-              <span className="mini-stat-val">{doneCount}</span>
-              <span className="mini-stat-lab">Completed</span>
+              <span className="mini-stat-val">{Math.round(donePct)}%</span>
+              <span className="mini-stat-lab">Completion Rate</span>
             </div>
             <div className="mini-stat-progress"><div className="bar done-bar" style={{width: `${donePct}%`}}></div></div>
           </div>
+
         </div>
       </div>
     </div>
