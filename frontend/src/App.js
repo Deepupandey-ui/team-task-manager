@@ -15,6 +15,7 @@ function App() {
   const [error, setError] = useState(null);
   const [myPerformance, setMyPerformance] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [currentUserSessionEmail, setCurrentUserSessionEmail] = useState(localStorage.getItem("email") || "");
 
   // Active Tab
   const [activeTab, setActiveTab] = useState("tasks");
@@ -74,6 +75,7 @@ function App() {
       const receivedToken = res.data.token || res.data;
       localStorage.setItem("token", receivedToken);
       localStorage.setItem("email", email);
+      setCurrentUserSessionEmail(email);
       setIsLoggedIn(true);
     } catch (err) {
       console.error(err);
@@ -86,6 +88,7 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
+    setCurrentUserSessionEmail("");
     setIsLoggedIn(false);
     setUsers([]);
   };
@@ -126,8 +129,7 @@ function App() {
 
   // Determine current user's role safely
   let currentUserRole = null;
-  const loggedInEmail = localStorage.getItem("email");
-  const currentUserObj = users.find(u => u.email === loggedInEmail);
+  const currentUserObj = users.find(u => u.email === currentUserSessionEmail);
   
   if (currentUserObj && currentUserObj.role) {
     currentUserRole = currentUserObj.role.toUpperCase();
@@ -213,7 +215,7 @@ function App() {
       localStorage.setItem("token", token);
       localStorage.setItem("email", regData.email);
       setIsLoggedIn(true);
-      setLoggedInEmail(regData.email);
+      setCurrentUserSessionEmail(regData.email);
       setAuthMode("login");
     } catch (err) {
       setRegError(err.response?.data?.error || "Registration failed.");
@@ -410,7 +412,7 @@ function App() {
             </div>
 
           )}
-          <span className="logged-in-user">👤 {loggedInEmail}</span>
+          <span className="logged-in-user">👤 {currentUserSessionEmail}</span>
           {myPerformance?.companyName && (
             <span className="company-badge">🏢 {myPerformance.companyName}</span>
           )}
