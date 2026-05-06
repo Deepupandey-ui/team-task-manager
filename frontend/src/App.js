@@ -130,7 +130,7 @@ function App() {
   // Determine current user's role safely
   let currentUserRole = null;
   const currentUserObj = users.find(u => u.email === loggedInEmail);
-  
+
   if (currentUserObj && currentUserObj.role) {
     currentUserRole = currentUserObj.role.toUpperCase();
   }
@@ -140,8 +140,8 @@ function App() {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
       const decoded = JSON.parse(jsonPayload);
       if (decoded.role) {
@@ -231,24 +231,24 @@ function App() {
           <div className="login-card">
             <h2>Forgot Password</h2>
             <p className="login-subtitle">
-              {forgotPasswordStep === 1 
-                ? "Enter your email to receive an OTP." 
+              {forgotPasswordStep === 1
+                ? "Enter your email to receive an OTP."
                 : "Enter the OTP sent to your email and your new password."}
             </p>
-            
+
             {fpError && <div className="login-error">{fpError}</div>}
             {fpSuccess && <div className="success-toast" style={{ position: 'relative', top: 0, marginBottom: '15px' }}>{fpSuccess}</div>}
-            
+
             {forgotPasswordStep === 1 ? (
               <form onSubmit={handleForgotPasswordRequest}>
                 <div className="form-group">
                   <label>Email</label>
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     value={fpEmail}
                     onChange={(e) => setFpEmail(e.target.value)}
                     placeholder="Enter your registered email"
-                    required 
+                    required
                   />
                 </div>
                 <button type="submit" className="btn-login" disabled={fpLoading}>
@@ -262,22 +262,22 @@ function App() {
               <form onSubmit={handleResetPassword}>
                 <div className="form-group">
                   <label>OTP</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={fpOtp}
                     onChange={(e) => setFpOtp(e.target.value)}
                     placeholder="Enter 6-digit OTP"
-                    required 
+                    required
                   />
                 </div>
                 <div className="form-group">
                   <label>New Password</label>
-                  <input 
-                    type="password" 
+                  <input
+                    type="password"
                     value={fpNewPassword}
                     onChange={(e) => setFpNewPassword(e.target.value)}
                     placeholder="Enter new password"
-                    required 
+                    required
                   />
                 </div>
                 <button type="submit" className="btn-login" disabled={fpLoading}>
@@ -299,48 +299,48 @@ function App() {
           <div className="login-card anim-slide-up">
             <h2>Create Your Workspace</h2>
             <p className="login-subtitle">Start managing your team with a professional SaaS environment</p>
-            
+
             {regError && <div className="login-error">{regError}</div>}
-            
+
             <form onSubmit={handleRegister}>
               <div className="form-group">
                 <label>Full Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={regData.name}
-                  onChange={(e) => setRegData({...regData, name: e.target.value})}
+                  onChange={(e) => setRegData({ ...regData, name: e.target.value })}
                   placeholder="e.g. John Doe"
-                  required 
+                  required
                 />
               </div>
               <div className="form-group">
                 <label>Organization Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={regData.companyName}
-                  onChange={(e) => setRegData({...regData, companyName: e.target.value})}
+                  onChange={(e) => setRegData({ ...regData, companyName: e.target.value })}
                   placeholder="e.g. Acme Corp"
-                  required 
+                  required
                 />
               </div>
               <div className="form-group">
                 <label>Email Address</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={regData.email}
-                  onChange={(e) => setRegData({...regData, email: e.target.value})}
+                  onChange={(e) => setRegData({ ...regData, email: e.target.value })}
                   placeholder="name@company.com"
-                  required 
+                  required
                 />
               </div>
               <div className="form-group">
                 <label>Password</label>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   value={regData.password}
-                  onChange={(e) => setRegData({...regData, password: e.target.value})}
+                  onChange={(e) => setRegData({ ...regData, password: e.target.value })}
                   placeholder="Minimum 8 characters"
-                  required 
+                  required
                 />
               </div>
               <button type="submit" className="btn-login" disabled={regLoading}>
@@ -360,38 +360,38 @@ function App() {
         <div className="login-card">
           <h2>Task Manager Login</h2>
           <p className="login-subtitle">Enter your credentials to access the dashboard</p>
-          
+
           {loginError && <div className="login-error">{loginError}</div>}
-          
+
           <form onSubmit={handleLogin}>
             <div className="form-group">
               <label>Email</label>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@example.com"
-                required 
+                required
               />
             </div>
             <div className="form-group">
               <label>Password</label>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                required 
+                required
               />
             </div>
             <button type="submit" className="btn-login" disabled={loginLoading}>
               {loginLoading ? "Authenticating..." : "Sign In"}
             </button>
             <div className="auth-footer">
-               <span className="link-text" onClick={() => setForgotPasswordStep(1)}>Forgot Password?</span>
-               <div style={{ marginTop: "12px" }}>
-                 New here? <span className="link-text" onClick={() => setAuthMode("register")}>Create a Workspace</span>
-               </div>
+              <span className="link-text" onClick={() => setForgotPasswordStep(1)}>Forgot Password?</span>
+              <div style={{ marginTop: "12px" }}>
+                New here? <span className="link-text" onClick={() => setAuthMode("register")}>Create a Workspace</span>
+              </div>
             </div>
           </form>
         </div>
@@ -419,7 +419,7 @@ function App() {
           {currentUserRole && <span className="header-role-badge">{currentUserRole}</span>}
 
           <div className="notification-bell" onClick={() => setActiveTab('notifications')}>
-             🔔 {notifications.filter(n => !n.read).length > 0 && <span className="notif-count">{notifications.filter(n => !n.read).length}</span>}
+            🔔 {notifications.filter(n => !n.read).length > 0 && <span className="notif-count">{notifications.filter(n => !n.read).length}</span>}
           </div>
           <button onClick={handleLogout} className="btn-logout">Logout</button>
 
@@ -428,26 +428,26 @@ function App() {
 
       {/* Tab Navigation */}
       <div className="tab-navigation">
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'tasks' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('tasks')}
         >
           📋 Tasks
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'users' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('users')}
         >
           👥 Users
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'leaderboard' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('leaderboard')}
         >
           🏆 Leaderboard
         </button>
         {currentUserRole === 'ADMIN' && (
-          <button 
+          <button
             className={`tab-btn ${activeTab === 'admin' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('admin')}
           >
@@ -466,8 +466,8 @@ function App() {
 
         {/* Tasks Tab */}
         {activeTab === 'tasks' && (
-          <TaskList 
-            currentUserRole={currentUserRole} 
+          <TaskList
+            currentUserRole={currentUserRole}
             loadMyPerformance={loadMyPerformance}
           />
         )}
@@ -475,10 +475,10 @@ function App() {
         {/* Users Tab */}
         {activeTab === 'users' && (
           <>
-            <UserList 
-              users={users} 
-              loading={loading} 
-              error={error} 
+            <UserList
+              users={users}
+              loading={loading}
+              error={error}
               currentUserRole={currentUserRole}
               onDeleteSuccess={(deletedId) => {
                 setUsers(users.filter(user => user.id !== deletedId));
@@ -518,7 +518,7 @@ function App() {
                 {notifications.map(n => (
                   <div key={n.id} className={`notif-item ${n.read ? 'read' : 'unread'}`} onClick={() => {
                     import("./services/api").then(api => api.markNotificationRead(n.id));
-                    setNotifications(notifications.map(notif => notif.id === n.id ? {...notif, read: true} : notif));
+                    setNotifications(notifications.map(notif => notif.id === n.id ? { ...notif, read: true } : notif));
                   }}>
                     <div className="notif-content">
                       <span className="notif-type">[{n.type}]</span>
